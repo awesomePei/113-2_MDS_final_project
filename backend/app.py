@@ -7,10 +7,13 @@ import joblib
 from utils.preprocess import preprocess_uploaded_dataframe
 import numpy as np
 
+from optimization.tabu import tabu_search
+from optimization.ga import genetic
+
+
 app = Flask(__name__)
 CORS(app)
 
-CORS(app) 
 
 # Configure the upload folder
 UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
@@ -186,6 +189,7 @@ def regression_prediction():
         return jsonify({'error': str(e)}), 500
 
 
+
 @app.route('/api/dashboard/<filename>', methods=['GET'])
 def dashboard_data(filename):
     PREDICTION_FOLDER = './backend/Classification_prediction'
@@ -257,6 +261,50 @@ def dashboard_data(filename):
     except Exception as e:
         print(e)
         return jsonify({'error': str(e)}), 500
+
+@app.route('/tabu_optimize', methods=['POST'])
+def run_tabu():
+    print("📥 Received /tabu_optimize request")
+    csv_path = os.path.join(os.path.dirname(__file__), 'Regression_prediction', 'example_prediction.csv')
+    if not os.path.exists(csv_path):
+        return jsonify({'error': f'File not found: {csv_path}'}), 404
+
+    df = pd.read_csv(csv_path)
+    order_indices = list(df.index)
+    best_order, best_score = tabu_search(df, order_indices)
+    print("✅ Best order:", best_order)
+    print("✅ Best score:", best_score)
+
+    return jsonify({
+        "summary": {
+            "best_order": best_order
+        },
+        "bestScore": best_score,
+        "scoreHistory": []  # 如果你有歷程資料可以填，沒有就空陣列
+    })
+
+@app.route('/ga_optimize', methods=['POST'])
+def run_ga():
+    print("📥 Received /ga_optimize request")
+    csv_path = os.path.join(os.path.dirname(__file__), 'Regression_prediction', 'example_prediction.csv')
+    if not os.path.exists(csv_path):
+        return jsonify({'error': f'File not found: {csv_path}'}), 404
+
+    df = pd.read_csv(csv_path)
+    order_indices = list(df.index)
+    best_order, best_score = genetic(df)
+    print("✅ Best order:", best_order)
+    print("✅ Best score:", best_score)
+
+    return jsonify({
+        "summary": {
+            "best_order": best_order
+        },
+        "bestScore": best_score,
+        "scoreHistory": []  # 如果你有歷程資料可以填，沒有就空陣列
+    })
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001) # Listens on all public IPs at port 5000
