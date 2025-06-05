@@ -81,7 +81,7 @@ print(f"Number of rows after removing Z-score outliers: {len(df_cleaned)}")
 
 # prompt: transform shipping date (DateOrders) into something I can process, maybe take it apart
 
-# # Convert 'DateOrders' to datetime objects
+# # # Convert 'DateOrders' to datetime objects
 df['DateOrders'] = pd.to_datetime(df['shipping date (DateOrders)'])
 
 # Extract date and time components
@@ -90,8 +90,8 @@ df['ShippingMonth'] = df['DateOrders'].dt.month
 df['ShippingDay'] = df['DateOrders'].dt.day
 df['ShippingHour'] = df['DateOrders'].dt.hour
 df['ShippingWeekday'] = df['DateOrders'].dt.weekday # Monday=0, Sunday=6
-df = df.drop(columns = ['shipping date (DateOrders)'])
 df = df.drop(columns = ['DateOrders'])
+df = df.drop(columns = ['shipping date (DateOrders)'])
 
 # prompt: transform 'order date (DateOrders)' into year, month, day, hour, weekday and drop ti
 
@@ -217,6 +217,33 @@ print(f"Mean Squared Error (MSE): {mse:.4f}")
 print(f"R-squared (R2): {r2:.4f}")
 
 # prompt: store the regression model
+# Get the XGBoost Regressor model from the pipeline
+xgb_reg_model = pipeline_regression.named_steps['xgb_reg']
+
+# Get feature importances for the regression model
+feature_importances_reg = xgb_reg_model.feature_importances_
+
+# Get feature names from the training data
+feature_names_reg = X_shipping_real_train.columns
+
+# Create a pandas Series for better visualization
+feature_importances_series_reg = pd.Series(feature_importances_reg, index=feature_names_reg)
+
+# Sort feature importances in descending order
+sorted_feature_importances_reg = feature_importances_series_reg.sort_values(ascending=False)
+
+# Print the most significant features for regression
+print("\nFeature Significance for 'Days for shipping (real)' prediction (sorted by importance):")
+print(sorted_feature_importances_reg)
+
+# Visualize the top features for regression
+plt.figure(figsize=(10, 8))
+sorted_feature_importances_reg.head(20).plot(kind='barh')
+plt.title('Top 20 Most Significant Features for Days for Shipping Prediction')
+plt.xlabel('Feature Importance')
+plt.ylabel('Feature')
+plt.gca().invert_yaxis() # Invert axis to have the most important at the top
+plt.show()
 
 # Export the regression pipeline to a file
 pipeline_regression_filename = './backend/model/shipping_real_regression_pipeline.joblib'
