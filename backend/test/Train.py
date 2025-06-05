@@ -132,6 +132,7 @@
 
 # df = df.drop(columns = ['Customer Street', 'Order City', 'Order State'])
 # df = df.drop(columns = ['Late_delivery_risk', 'Delivery Status'])
+# # df = df.drop(columns = [ 'Delivery Status'])
 # df = df.drop(columns = ['Order Zipcode', 'Product Description'])
 
 # # prompt: load the encoder and encoder the df
