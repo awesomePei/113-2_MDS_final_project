@@ -1,12 +1,15 @@
+// pages/DelayPrediction.tsx
 import React, { useState } from 'react';
+import FileUpload from '../components/FileUpload';
+import MapWithMarkers from '../components/MapWithMarkers';
+import UploadPreview from '../components/UploadPreview';
 
 const DelayPrediction = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [message, setMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [predictions, setPredictions] = useState<number[] | null>(null);
   const [regressionResults, setRegressionResults] = useState<number[] | null>(null);
-  const [fileBaseName, setFileBaseName] = useState<string>('');
+  const [uploadedData, setUploadedData] = useState<Record<string, string>[]>([]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -14,112 +17,72 @@ const DelayPrediction = () => {
       setSelectedFile(file);
       setPredictions(null);
       setRegressionResults(null);
-      setMessage('');
-      const baseName = file.name.replace(/\.[^/.]+$/, '');
-      setFileBaseName(baseName);
-    } else {
-      setSelectedFile(null);
-      setFileBaseName('');
     }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!selectedFile) {
-      setMessage('Please select a file first.');
-      return;
-    }
-
-    if (selectedFile.type !== 'text/csv' && !selectedFile.name.toLowerCase().endsWith('.csv')) {
-      setMessage('Please upload a CSV file.');
+    if (
+      !selectedFile ||
+      (selectedFile.type !== 'text/csv' && !selectedFile.name.toLowerCase().endsWith('.csv'))
+    ) {
       return;
     }
 
     setIsLoading(true);
-    setMessage('Uploading...');
-
     const formData = new FormData();
     formData.append('file', selectedFile);
 
     try {
-      const response = await fetch('http://localhost:5001/upload', {
+      // 上傳檔案
+      const uploadResponse = await fetch('http://localhost:5001/upload', {
         method: 'POST',
         body: formData,
       });
 
-      if (response.ok) {
-        const result = await response.text();
-        setMessage(`Upload successful: ${result}`);
-        setSelectedFile(null);
-      } else {
-        const errorText = await response.text();
-        setMessage(`Upload failed: ${errorText}`);
+      if (!uploadResponse.ok) {
+        await uploadResponse.text();
+        return;
       }
-    } catch (error) {
-      setMessage(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handlePredict = async () => {
-    if (!fileBaseName) {
-      setMessage('Please upload a file before requesting predictions.');
-      return;
-    }
+      const uploaded = await uploadResponse.json();
+      setUploadedData(uploaded);
+      setSelectedFile(null);
 
-    setIsLoading(true);
-    setMessage('Fetching predictions...');
+      const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
 
-    try {
-      const response = await fetch('http://localhost:5001/prediction', {
+      // 呼叫分類預測 API
+      const predictionResponse = await fetch('http://localhost:5001/prediction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_name: fileBaseName }),
+        body: JSON.stringify({ file_name: baseName }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setPredictions(data.predictions);
-        setMessage('Prediction successful.');
-      } else {
-        const errorText = await response.text();
-        setMessage(`Prediction failed: ${errorText}`);
+      if (!predictionResponse.ok) {
+        await predictionResponse.text();
+        return;
       }
-    } catch (error) {
-      setMessage(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleRegression = async () => {
-    if (!fileBaseName) {
-      setMessage('Please upload a file before requesting regression predictions.');
-      return;
-    }
+      const predictionData = await predictionResponse.json();
+      setPredictions(predictionData.predictions);
 
-    setIsLoading(true);
-    setMessage('Fetching regression predictions...');
-
-    try {
-      const response = await fetch('http://localhost:5001/regression', {
+      // 呼叫回歸預測 API
+      const regressionResponse = await fetch('http://localhost:5001/regression', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_name: fileBaseName }),
+        body: JSON.stringify({ file_name: baseName }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setRegressionResults(data.predictions);
-        setMessage('Regression prediction successful.');
-      } else {
-        const errorText = await response.text();
-        setMessage(`Regression prediction failed: ${errorText}`);
+      if (!regressionResponse.ok) {
+        await regressionResponse.text();
+        return;
       }
+
+      const regressionData = await regressionResponse.json();
+      setRegressionResults(regressionData.predictions);
     } catch (error) {
-      setMessage(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('處理過程出錯:', error);
     } finally {
       setIsLoading(false);
     }
@@ -127,78 +90,36 @@ const DelayPrediction = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
-      <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg max-w-xl w-full p-8 text-gray-900">
-        <h1 className="text-3xl font-bold text-center mb-2">Delay Prediction</h1>
-        <p className="text-center text-gray-700 mb-6">Upload a CSV file to get predictions.</p>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            disabled={isLoading}
-            className="file:px-4 file:py-2 file:border file:border-gray-300 file:rounded-lg file:bg-white/60 file:text-gray-700 hover:file:bg-white/80 transition"
-          />
-
-          <button
-            type="submit"
-            disabled={!selectedFile || isLoading}
-            className="px-4 py-2 rounded-lg bg-white/60 hover:bg-white/80 border border-white/40 shadow-md backdrop-blur-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Uploading...' : 'Upload File'}
-          </button>
-        </form>
-
-        <div className="flex flex-col gap-2 mt-4">
-          <button
-            onClick={handlePredict}
-            disabled={!fileBaseName || isLoading}
-            className="px-4 py-2 rounded-lg bg-white/60 hover:bg-white/80 border border-white/40 shadow-md backdrop-blur-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Predicting...' : 'Get Predictions'}
-          </button>
-
-          <button
-            onClick={handleRegression}
-            disabled={!fileBaseName || isLoading}
-            className="px-4 py-2 rounded-lg bg-white/60 hover:bg-white/80 border border-white/40 shadow-md backdrop-blur-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Predicting (regression)...' : 'Get Regression Predictions'}
-          </button>
-        </div>
-
-        {message && (
-          <div
-            className={`mt-6 p-4 rounded-lg border text-sm ${
-              message.includes('successful')
-                ? 'bg-green-100 border-green-300 text-green-800'
-                : 'bg-red-100 border-red-300 text-red-800'
-            }`}
-          >
-            {message}
+      <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl w-full max-w-4xl p-10 text-gray-900 flex flex-col gap-10">
+        {/* 上傳區塊 */}
+        {uploadedData.length === 0 && (
+          <div className="bg-white/90 rounded-2xl shadow-md p-6 flex flex-col justify-center">
+            <FileUpload
+              isLoading={isLoading}
+              selectedFile={selectedFile}
+              handleFileChange={handleFileChange}
+              handleSubmit={handleSubmit}
+            />
           </div>
         )}
 
-        {predictions && (
-          <div className="mt-6">
-            <h3 className="font-semibold mb-2">Classification Predictions:</h3>
-            <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
-              {predictions.map((pred, index) => (
-                <li key={index}>Row {index + 1}: {pred}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {/* 預覽與地圖區塊 */}
+        {uploadedData.length > 0 && (
+          <>
+            <div className="mt-6 max-h-[400px] overflow-y-auto border border-gray-300 rounded-lg p-4 bg-white">
+              <UploadPreview
+                uploadedData={uploadedData}
+                predictions={predictions}
+                regressionResults={regressionResults}
+              />
+            </div>
 
-        {regressionResults && (
-          <div className="mt-6">
-            <h3 className="font-semibold mb-2">Regression Predictions:</h3>
-            <ul className="list-disc list-inside text-sm text-gray-800 space-y-1">
-              {regressionResults.map((pred, index) => (
-                <li key={index}>Row {index + 1}: {pred.toFixed(2)}</li>
-              ))}
-            </ul>
-          </div>
+            <MapWithMarkers
+              data={uploadedData}
+              predictions={predictions}
+              regressionResults={regressionResults}
+            />
+          </>
         )}
       </div>
     </div>

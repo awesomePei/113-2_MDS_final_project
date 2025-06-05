@@ -35,6 +35,8 @@ def allowed_file(filename):
 def index():
     return render_template('upload.html')
 
+from flask import jsonify
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -55,28 +57,31 @@ def upload_file():
         try:
             file.save(filepath)
 
-            # --- Read the saved CSV into a DataFrame ---
-            # Use 'engine="python"' or 'low_memory=False' if you encounter DtypeWarning
+            # 讀取上傳的 CSV 檔案
             df = pd.read_csv(filepath)
-            # --- Call your preprocessing function ---
+            # 擷取指定欄位資料
+            columns_to_return = ['Shipping Mode', 'order date (DateOrders)', 'Customer City', 'Customer Country', 'Latitude', 'Longitude']
+            selected_df = df[columns_to_return]
+            # 前處理資料
             preprocessed_df = preprocess_uploaded_dataframe(df, encoder_path='./backend/model/one_hot_encoder.joblib')
             preprocessed_df.to_csv(filepath_processed, index=False)
-            # --- Now you can work with preprocessed_df ---
-            # For demonstration, let's just show its new shape and columns
             print(f"File '{filename}' uploaded and preprocessed successfully.")
 
-            # You might want to save the preprocessed_df, or pass it to a model
-            # For now, let's just return a success message.
-            return f'File "{filename}" uploaded and preprocessed successfully! New shape: {preprocessed_df.shape}'
+            # 回傳 JSON 給前端
+            return jsonify(selected_df.to_dict(orient='records'))
 
         except pd.errors.EmptyDataError:
+            print("empty")
             return "Uploaded CSV file is empty.", 400
         except pd.errors.ParserError as e:
+            print("parser")
             return f"Error parsing CSV file: {e}", 400
         except Exception as e:
+            print(e)
             return f"An error occurred during file processing: {e}", 500
     else:
         return 'Invalid file type. Only CSV files are allowed.', 400
+
 
 
 @app.route('/prediction', methods=['POST'])
