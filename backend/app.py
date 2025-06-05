@@ -11,7 +11,6 @@ from optimization.tabu import tabu_search
 app = Flask(__name__)
 CORS(app)
 
-CORS(app) 
 
 # Configure the upload folder
 UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))

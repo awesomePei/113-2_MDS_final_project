@@ -34,36 +34,52 @@ export default function BestDeliveryArrangement() {
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 16 }}>
-        <button onClick={() => setMethod("tabu")} style={{ marginRight: 8, background: method === "tabu" ? "#ddd" : "#fff" }}>Tabu Search</button>
-        <button onClick={() => setMethod("ga")} style={{ background: method === "ga" ? "#ddd" : "#fff" }}>Genetic Algorithm</button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
+      <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg max-w-xl w-full p-8 text-gray-900">
+        <h1 className="text-3xl font-bold text-center mb-2">Best Delivery Arrangement</h1>
+        <p className="text-center text-gray-700 mb-6">Select a method and run optimization.</p>
 
-      <div style={{ marginBottom: 24, padding: 16, border: "1px solid #ccc", borderRadius: 8 }}>
-        <button
-          onClick={handleRun}
-          disabled={loading}
-          style={{
-            padding: "8px 16px",
-            border: "1px solid #888",
-            borderRadius: 4,
-            background: loading ? "#eee" : "#f5f5f5",
-            fontWeight: 500,
-            cursor: loading ? "not-allowed" : "pointer",
-            minWidth: 130
-          }}
-        >
-          {loading ? "Running..." : "Run Optimization"}
-        </button>
-      </div>
-      {result && (
-        <div style={{ marginTop: 32 }}>
-          <h3 style={{ fontWeight: 600 }}>Optimization Result</h3>
-          <p><strong>Best Score:</strong> {result.bestScore}</p>
-          <p><strong>Best Order:</strong> {Array.isArray(result.summary?.best_order) ? result.summary.best_order.join(", ") : "N/A"}</p>
+        <div className="flex justify-center gap-4 mb-6">
+          <button
+            onClick={() => setMethod("tabu")}
+            className={`px-4 py-2 rounded-lg border shadow-md transition ${
+              method === "tabu"
+                ? "bg-gray-200 text-black"
+                : "bg-white/60 text-gray-800 hover:bg-white/80"
+            }`}
+          >
+            Tabu Search
+          </button>
+          <button
+            onClick={() => setMethod("ga")}
+            className={`px-4 py-2 rounded-lg border shadow-md transition ${
+              method === "ga"
+                ? "bg-gray-200 text-black"
+                : "bg-white/60 text-gray-800 hover:bg-white/80"
+            }`}
+          >
+            Genetic Algorithm
+          </button>
         </div>
-      )}
+
+        <div className="text-center mb-4">
+          <button
+            onClick={handleRun}
+            disabled={loading}
+            className="px-6 py-2 rounded-lg bg-indigo-400 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {loading ? "Running..." : "Run Optimization"}
+          </button>
+        </div>
+
+        {result && (
+          <div className="mt-6 text-sm text-gray-800">
+            <h3 className="font-semibold mb-2">Optimization Result</h3>
+            <p><strong>Best Score:</strong> {result.bestScore}</p>
+            <p><strong>Best Order:</strong> {Array.isArray(result.summary?.best_order) ? result.summary.best_order.join(", ") : "N/A"}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
