@@ -93,42 +93,42 @@ const DelayPrediction = () => {
 
   return (
     <div>
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
-      <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl w-full max-w-4xl p-10 text-gray-900 flex flex-col gap-10">
-        {/* 上傳區塊 */}
-        {uploadedData.length === 0 && (
-          <div className="bg-white/90 rounded-2xl shadow-md p-6 flex flex-col justify-center">
-            <FileUpload
-              isLoading={isLoading}
-              selectedFile={selectedFile}
-              handleFileChange={handleFileChange}
-              handleSubmit={handleSubmit}
-            />
-          </div>
-        )}
+      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl w-full max-w-4xl p-10 text-gray-900 flex flex-col gap-10">
+          {/* 上傳區塊 */}
+          {uploadedData.length === 0 && (
+            <div className="bg-white/90 rounded-2xl shadow-md p-6 flex flex-col justify-center">
+              <FileUpload
+                isLoading={isLoading}
+                selectedFile={selectedFile}
+                handleFileChange={handleFileChange}
+                handleSubmit={handleSubmit}
+              />
+            </div>
+          )}
 
-        {/* 預覽與地圖區塊 */}
-        {uploadedData.length > 0 && (
-          <>
-            <div className="mt-6 max-h-[400px] overflow-y-auto border border-gray-300 rounded-lg p-4 bg-white">
-              <UploadPreview
-                uploadedData={uploadedData}
+          {/* 預覽與地圖區塊 */}
+          {uploadedData.length > 0 && (
+            <>
+              <div className="mt-6 max-h-[400px] overflow-y-auto border border-gray-300 rounded-lg p-4 bg-white">
+                <UploadPreview
+                  uploadedData={uploadedData}
+                  predictions={predictions}
+                  regressionResults={regressionResults}
+                />
+              </div>
+
+              <MapWithMarkers
+                data={uploadedData}
                 predictions={predictions}
                 regressionResults={regressionResults}
               />
-            </div>
-
-            <MapWithMarkers
-              data={uploadedData}
-              predictions={predictions}
-              regressionResults={regressionResults}
-            />
-          </>
-        )}
+            </>
+          )}
+          <Dashboard filename={fileBaseName} />
+        </div>
+        {/* <Heatmap filename={fileBaseName} /> */}
       </div>
-      {/* <Heatmap filename={fileBaseName} /> */}
-    </div>
-          <Dashboard filename={fileBaseName}/>
     </div>
   );
 };

@@ -57,7 +57,7 @@ const MapWithMarkers: React.FC<Props> = ({ data, predictions, regressionResults 
                     <Marker key={idx} position={[lat, lon]}>
                         <Popup>
                             <div className="space-y-1 text-sm">
-                                <div><strong>Order Time:</strong> {data[idx]['order date'] || '-'}</div>
+                                <div><strong>Order Time:</strong> {data[idx]['order date (DateOrders)'] || '-'}</div>
                                 <div><strong>Country:</strong> {data[idx]['Customer Country'] || '-'}</div>
                                 <div><strong>City:</strong> {data[idx]['Customer City'] || '-'}</div>
                                 <div><strong>Shipping Mode:</strong> {data[idx]['Shipping Mode'] || '-'}</div>
