@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+// import Heatmap from '../components/HeatMap';
+import Dashboard from '../components/dashBoard';
 
 const DelayPrediction = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -126,6 +128,7 @@ const DelayPrediction = () => {
   };
 
   return (
+    <div>
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
       <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg max-w-xl w-full p-8 text-gray-900">
         <h1 className="text-3xl font-bold text-center mb-2">Delay Prediction</h1>
@@ -201,6 +204,9 @@ const DelayPrediction = () => {
           </div>
         )}
       </div>
+      {/* <Heatmap filename={fileBaseName} /> */}
+    </div>
+          <Dashboard filename={fileBaseName}/>
     </div>
   );
 };

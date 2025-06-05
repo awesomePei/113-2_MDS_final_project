@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS # Import CORS
 import joblib
 from utils.preprocess import preprocess_uploaded_dataframe
+import numpy as np
 
 app = Flask(__name__)
 CORS(app)
@@ -177,6 +178,79 @@ def regression_prediction():
         })
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/dashboard/<filename>', methods=['GET'])
+def dashboard_data(filename):
+    PREDICTION_FOLDER = './backend/Classification_prediction'
+    try:
+        data_path = os.path.join(UPLOAD_FOLDER, f'{filename}.csv')
+        processed_path = os.path.join(UPLOAD_FOLDER, f'{filename}_processed.csv')
+        pred_path = os.path.join(PREDICTION_FOLDER, f'{filename}_prediction.csv')
+
+        df = pd.read_csv(data_path)
+        pred_df = pd.read_csv(pred_path)
+        processed_df = pd.read_csv(processed_path)
+
+        # Merge with prediction
+        merged = pd.merge(df, pred_df, on='Order Id', how='left')
+        merged['predicted_late'] = merged['PredictedValue'] > 0.5
+
+        # 1. Delays by Category
+        delay_by_category = (
+            merged.groupby('Category Name')['predicted_late']
+            .mean()
+            .sort_values(ascending=False)
+            .round(2)
+            .to_dict()
+        )
+
+        # 2. Shipment Delay Overview
+        shipment_overview = {
+            'Late': int(merged['predicted_late'].sum()),
+            'On Time': int((~merged['predicted_late']).sum())
+        }
+
+
+        xgb_model = model.named_steps['xgb']
+
+        # Get feature importances
+        feature_importances = xgb_model.feature_importances_
+
+        # Get feature names from the training data
+        feature_names = processed_df.columns
+
+        # Create a pandas Series for better visualization
+        feature_importances_series = pd.Series(feature_importances, index=feature_names)
+
+        # Sort feature importances in descending order
+        sorted_feature_importances = feature_importances_series.sort_values(ascending=False)
+
+        top_10_features = sorted_feature_importances.sort_values(ascending=False).head(10)
+
+        feature_importance_dict = {
+            str(k): float(v) for k, v in top_10_features.items()
+        }
+        #     'Shipping Mode': 0.22,
+        #     'Order Item Discount': 0.18,
+        #     'Order Region': 0.16,
+        #     'Product Category Id': 0.12,
+        #     'Order Item Quantity': 0.09,
+        #     'Customer Segment': 0.07,
+        #     'Sales per customer': 0.06,
+        #     'Order Profit Per Order': 0.05,
+        #     'Order Hour': 0.05
+        # }
+
+        return jsonify({
+            'delayByCategory': delay_by_category,
+            'shipmentOverview': shipment_overview,
+            'featureImportance': feature_importance_dict
+        })
+
+    except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
