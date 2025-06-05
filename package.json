@@ -12,10 +12,7 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
-<<<<<<< HEAD
-=======
     "axios": "^1.9.0",
->>>>>>> 57f1b4fdd272ba9aea01f15ecc0187fc59f75809
     "leaflet": "^1.9.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
