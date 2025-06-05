@@ -107,11 +107,15 @@ def prediction():
         df = pd.read_csv(file_path)
 
         # Make predictions
-        predictions = model.predict(df)
+        predictions = model.predict_proba(df)
 
-        # Copy original DataFrame and add predictions
+        predictions = predictions[:, 1]
+        # Add prediction results to a new column
         result_df = df.copy()
-        result_df['Prediction'] = predictions
+        result_df['PredictedValue'] = predictions
+
+        # Keep only 'Order Id' and 'PredictedValue' columns
+        result_df = result_df[['Order Id', 'PredictedValue']]
 
         # Save to ./backend/Classification_prediction/<file_name>_prediction.csv
         output_dir = './backend/Classification_prediction'
@@ -152,13 +156,15 @@ def regression_prediction():
     try:
         # Load processed data
         df = pd.read_csv(file_path)
-
         # Perform regression prediction
         predictions = model.predict(df)
 
         # Add prediction results to a new column
         result_df = df.copy()
         result_df['PredictedValue'] = predictions
+
+        # Keep only 'Order Id' and 'PredictedValue' columns
+        result_df = result_df[['Order Id', 'PredictedValue']]
 
         # Save result to Regression_prediction directory
         output_dir = './backend/Regression_prediction'
