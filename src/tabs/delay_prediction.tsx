@@ -123,9 +123,9 @@ const DelayPrediction = () => {
                 predictions={predictions}
                 regressionResults={regressionResults}
               />
+              <Dashboard filename={fileBaseName} />
             </>
           )}
-          <Dashboard filename={fileBaseName} />
         </div>
         {/* <Heatmap filename={fileBaseName} /> */}
       </div>
