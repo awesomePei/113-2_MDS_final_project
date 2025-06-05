@@ -94,7 +94,7 @@ const DelayPrediction = () => {
   return (
     <div>
       <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl w-full max-w-4xl p-10 text-gray-900 flex flex-col gap-10">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl w-full  p-10 text-gray-900 flex flex-col gap-10">
           {/* 上傳區塊 */}
           {uploadedData.length === 0 && (
             <div className="bg-white/90 rounded-2xl shadow-md p-6 flex flex-col justify-center">
@@ -110,7 +110,7 @@ const DelayPrediction = () => {
           {/* 預覽與地圖區塊 */}
           {uploadedData.length > 0 && (
             <>
-              <div className="mt-6 max-h-[400px] overflow-y-auto border border-gray-300 rounded-lg p-4 bg-white">
+              <div className="mt-6 max-h-[80vh] overflow-y-auto border border-gray-300 rounded-lg p-6 bg-white shadow">
                 <UploadPreview
                   uploadedData={uploadedData}
                   predictions={predictions}
