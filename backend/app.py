@@ -6,6 +6,8 @@ from flask_cors import CORS # Import CORS
 import joblib
 from utils.preprocess import preprocess_uploaded_dataframe
 
+from optimization.tabu import tabu_search
+
 app = Flask(__name__)
 
 CORS(app) 
@@ -173,6 +175,22 @@ def regression_prediction():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/tabu_optimize', methods=['POST'])
+def run_tabu():
+    print("📥 Received /tabu_optimize request")
+    df = pd.read_csv('backend/Regression_prediction/example_prediction.csv')
+    order_indices = list(df.index)
+    best_order, best_score = tabu_search(df, order_indices)
+    print("✅ Best order:", best_order)
+    print("✅ Best score:", best_score)
+
+    return jsonify({
+        "summary": {
+            "best_order": best_order
+        },
+        "bestScore": best_score,
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001) # Listens on all public IPs at port 5000
