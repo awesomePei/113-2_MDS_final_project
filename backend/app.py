@@ -82,6 +82,8 @@ def upload_file():
 
 @app.route('/prediction', methods=['POST'])
 def prediction():
+    from joblib import load
+
     # Get filename from JSON body or query param
     data = request.get_json() or request.args
     file_name = data.get('file_name')
@@ -89,22 +91,86 @@ def prediction():
     if not file_name:
         return jsonify({'error': 'Missing file_name parameter'}), 400
 
-    file_path = os.path.join(UPLOAD_FOLDER, f"{file_name}_processed.csv")
+    file_path = os.path.join('./backend/uploads', f"{file_name}_processed.csv")
 
     if not os.path.isfile(file_path):
         return jsonify({'error': f"File not found: {file_path}"}), 404
 
-    if model is None:
-        return jsonify({'error': 'Model is not loaded'}), 500
+    # Load model (if not already loaded globally)
+    try:
+        model = load('./backend/model/delay_prediction_pipeline.joblib')
+    except Exception as e:
+        return jsonify({'error': f'Model could not be loaded: {e}'}), 500
 
     try:
+        # Load the processed CSV
         df = pd.read_csv(file_path)
+
+        # Make predictions
         predictions = model.predict(df)
 
-        # Optionally return probabilities
-        # probabilities = model.predict_proba(df).tolist()
+        # Copy original DataFrame and add predictions
+        result_df = df.copy()
+        result_df['Prediction'] = predictions
 
-        return jsonify({'predictions': predictions.tolist()})
+        # Save to ./backend/Classification_prediction/<file_name>_prediction.csv
+        output_dir = './backend/Classification_prediction'
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, f"{file_name}_prediction.csv")
+        result_df.to_csv(output_path, index=False)
+
+        return jsonify({
+            'predictions': predictions.tolist(),
+            'saved_to': output_path
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/regression', methods=['POST'])
+def regression_prediction():
+    from joblib import load
+
+    # Get filename from JSON body or query param
+    data = request.get_json() or request.args
+    file_name = data.get('file_name')
+
+    if not file_name:
+        return jsonify({'error': 'Missing file_name parameter'}), 400
+
+    file_path = os.path.join('./backend/uploads', f"{file_name}_processed.csv")
+
+    if not os.path.isfile(file_path):
+        return jsonify({'error': f"File not found: {file_path}"}), 404
+
+    # Load regression model
+    try:
+        model = load('./backend/model/shipping_real_regression_pipeline.joblib')
+    except Exception as e:
+        return jsonify({'error': f'Model could not be loaded: {e}'}), 500
+
+    try:
+        # Load processed data
+        df = pd.read_csv(file_path)
+
+        # Perform regression prediction
+        predictions = model.predict(df)
+
+        # Add prediction results to a new column
+        result_df = df.copy()
+        result_df['PredictedValue'] = predictions
+
+        # Save result to Regression_prediction directory
+        output_dir = './backend/Regression_prediction'
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, f"{file_name}_prediction.csv")
+        result_df.to_csv(output_path, index=False)
+
+        return jsonify({
+            'predictions': predictions.tolist(),
+            'saved_to': output_path
+        })
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
