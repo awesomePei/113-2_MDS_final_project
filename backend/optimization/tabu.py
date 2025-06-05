@@ -1,17 +1,19 @@
 import numpy as np
 
 def fitness(individual, orders):
+    score = 0
     current_time = 0
-    total_score = 0
-    for idx in individual:
-        shipping_days = 1 # fallback value
-        scheduled_days = orders.loc[idx, 'Days for shipment (scheduled)']
-        delay = max(0, current_time + shipping_days - scheduled_days)
-        predicted_value = orders.loc[idx, 'PredictedValue']
-        score = delay + predicted_value
-        total_score += score
+    for position, idx in enumerate(individual):
+        predicted_risk = orders.loc[idx, 'PredictedValue']
+        shipping_days = 1
+
+        # 排序越後面，懲罰越高
+        delay_penalty = predicted_risk * (position + 1)
+
+        score += delay_penalty
         current_time += shipping_days
-    return total_score
+
+    return score
 
 def generate_initial_solution(order_indices):
     initial = order_indices.copy()
