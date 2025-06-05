@@ -21,7 +21,7 @@ const DataVisualization = () => {
         <noscript>
           <a href="#">
             <img
-              alt="運輸方式各個國家的影響"
+              alt="運輸方式在各個國家的延遲影響"
               src="https://public.tableau.com/static/images/M4/M4422M3F6/1_rss.png"
               style={{ border: 'none' }}
             />
