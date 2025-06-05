@@ -20,7 +20,7 @@ def preprocess_uploaded_dataframe(df: pd.DataFrame, encoder_path) -> pd.DataFram
         "Customer Id", "Customer Password", "Customer Fname", "Customer Lname",
         "Customer Email", "Product Image", "Customer Street", "Order City",
         "Order State", "Order Zipcode", "Product Description",
-        "Late_delivery_risk", "Delivery Status"
+        "Late_delivery_risk", "Delivery Status", "Days for shipping (real)"
     ], inplace=True, errors='ignore')
 
     # Convert shipping dates to datetime and extract parts

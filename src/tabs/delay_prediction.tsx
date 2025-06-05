@@ -1,27 +1,28 @@
-// delay_prediction.tsx
 import React, { useState } from 'react';
 
 const DelayPrediction = () => {
-  // State to hold the selected file
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  // State to manage messages from the backend (e.g., success or error)
   const [message, setMessage] = useState<string>('');
-  // State to indicate loading status during upload
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [predictions, setPredictions] = useState<number[] | null>(null); // Store predictions
+  const [fileBaseName, setFileBaseName] = useState<string>(''); // Extracted file name without extension
 
-  // Handler for when a file is selected
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
-      setMessage(''); // Clear previous messages
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      setPredictions(null);
+      setMessage('');
+      const baseName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+      setFileBaseName(baseName);
     } else {
       setSelectedFile(null);
+      setFileBaseName('');
     }
   };
 
-  // Handler for form submission
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Prevent default form submission behavior (page reload)
+    event.preventDefault();
 
     if (!selectedFile) {
       setMessage('Please select a file first.');
@@ -29,38 +30,67 @@ const DelayPrediction = () => {
     }
 
     if (selectedFile.type !== 'text/csv' && !selectedFile.name.toLowerCase().endsWith('.csv')) {
-        setMessage('Please upload a CSV file.');
-        return;
+      setMessage('Please upload a CSV file.');
+      return;
     }
 
-    setIsLoading(true); // Set loading state
+    setIsLoading(true);
     setMessage('Uploading...');
 
-    // Create a FormData object to send the file
     const formData = new FormData();
-    formData.append('file', selectedFile); // 'file' must match the name expected by your Flask backend (request.files['file'])
+    formData.append('file', selectedFile);
 
     try {
-      // Make the POST request to your Flask backend
-      // Assuming your Flask app is running on http://localhost:5000
       const response = await fetch('http://localhost:5001/upload', {
         method: 'POST',
-        body: formData, // FormData automatically sets the correct Content-Type header
+        body: formData,
       });
 
-      if (response.ok) { // Check if the response status is 2xx
-        const result = await response.text(); // Get the response text from Flask
+      if (response.ok) {
+        const result = await response.text();
         setMessage(`Upload successful: ${result}`);
-        setSelectedFile(null); // Clear the selected file input
+        setSelectedFile(null);
       } else {
-        const errorText = await response.text(); // Get error message from Flask
+        const errorText = await response.text();
         setMessage(`Upload failed: ${errorText}`);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
       setMessage(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-      setIsLoading(false); // Reset loading state
+      setIsLoading(false);
+    }
+  };
+
+  const handlePredict = async () => {
+    if (!fileBaseName) {
+      setMessage('Please upload a file before requesting predictions.');
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage('Fetching predictions...');
+
+    try {
+      const response = await fetch('http://localhost:5001/prediction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_name: fileBaseName }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPredictions(data.predictions);
+        setMessage('Prediction successful.');
+      } else {
+        const errorText = await response.text();
+        setMessage(`Prediction failed: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error fetching prediction:', error);
+      setMessage(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,16 +106,16 @@ const DelayPrediction = () => {
         <input
           type="file"
           id="csvFile"
-          name="csvFile" // This name doesn't matter for Flask, only 'file' in formData.append
-          accept=".csv" // Suggests only CSV files in the file picker
+          name="csvFile"
+          accept=".csv"
           onChange={handleFileChange}
-          disabled={isLoading} // Disable input during upload
+          disabled={isLoading}
           style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
         />
 
         <button
           type="submit"
-          disabled={!selectedFile || isLoading} // Disable button if no file selected or uploading
+          disabled={!selectedFile || isLoading}
           style={{
             padding: '10px 15px',
             backgroundColor: '#007bff',
@@ -100,6 +130,23 @@ const DelayPrediction = () => {
         </button>
       </form>
 
+      <button
+        onClick={handlePredict}
+        disabled={!fileBaseName || isLoading}
+        style={{
+          padding: '10px 15px',
+          backgroundColor: '#28a745',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '1em',
+          marginTop: '10px'
+        }}
+      >
+        {isLoading ? 'Predicting...' : 'Get Predictions'}
+      </button>
+
       {message && (
         <p style={{
           marginTop: '20px',
@@ -113,10 +160,15 @@ const DelayPrediction = () => {
         </p>
       )}
 
-      {selectedFile && (
-        <p style={{ marginTop: '10px', fontStyle: 'italic', color: '#555' }}>
-          Selected file: {selectedFile.name} ({selectedFile.size} bytes)
-        </p>
+      {predictions && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Predictions:</h3>
+          <ul>
+            {predictions.map((pred, index) => (
+              <li key={index}>Row {index + 1}: {pred}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

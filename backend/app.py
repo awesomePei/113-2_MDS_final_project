@@ -1,9 +1,9 @@
 import os
 import pandas as pd
-from flask import Flask, request, render_template, redirect, url_for 
+from flask import Flask, request, render_template, redirect, url_for, jsonify 
 from werkzeug.utils import secure_filename
 from flask_cors import CORS # Import CORS
-
+import joblib
 from utils.preprocess import preprocess_uploaded_dataframe
 
 app = Flask(__name__)
@@ -16,6 +16,13 @@ ALLOWED_EXTENSIONS = {'csv'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+CLASSIFICATION_MODEL_PATH = './backend/model/delay_prediction_pipeline.joblib'
+
+try:
+    model = joblib.load(CLASSIFICATION_MODEL_PATH)
+except Exception as e:
+    model = None
+    print(f"Failed to load model: {e}")
 # Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -72,6 +79,34 @@ def upload_file():
     else:
         return 'Invalid file type. Only CSV files are allowed.', 400
 
+
+@app.route('/prediction', methods=['POST'])
+def prediction():
+    # Get filename from JSON body or query param
+    data = request.get_json() or request.args
+    file_name = data.get('file_name')
+
+    if not file_name:
+        return jsonify({'error': 'Missing file_name parameter'}), 400
+
+    file_path = os.path.join(UPLOAD_FOLDER, f"{file_name}_processed.csv")
+
+    if not os.path.isfile(file_path):
+        return jsonify({'error': f"File not found: {file_path}"}), 404
+
+    if model is None:
+        return jsonify({'error': 'Model is not loaded'}), 500
+
+    try:
+        df = pd.read_csv(file_path)
+        predictions = model.predict(df)
+
+        # Optionally return probabilities
+        # probabilities = model.predict_proba(df).tolist()
+
+        return jsonify({'predictions': predictions.tolist()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001) # Listens on all public IPs at port 5000
