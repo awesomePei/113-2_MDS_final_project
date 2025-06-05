@@ -1,123 +1,134 @@
-// delay_prediction.tsx
+// pages/DelayPrediction.tsx
 import React, { useState } from 'react';
+import FileUpload from '../components/FileUpload';
+import MapWithMarkers from '../components/MapWithMarkers';
+import UploadPreview from '../components/UploadPreview';
+import Dashboard from '../components/dashBoard';
 
 const DelayPrediction = () => {
-  // State to hold the selected file
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  // State to manage messages from the backend (e.g., success or error)
-  const [message, setMessage] = useState<string>('');
-  // State to indicate loading status during upload
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [predictions, setPredictions] = useState<number[] | null>(null);
+  const [regressionResults, setRegressionResults] = useState<number[] | null>(null);
+  const [uploadedData, setUploadedData] = useState<Record<string, string>[]>([]);
+  const [fileBaseName, setFileBaseName] = useState<string>(''); // ✅ NEW
 
-  // Handler for when a file is selected
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
-      setMessage(''); // Clear previous messages
-    } else {
-      setSelectedFile(null);
+      const file = event.target.files[0];
+      setSelectedFile(file);
+      setPredictions(null);
+      setRegressionResults(null);
     }
   };
 
-  // Handler for form submission
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Prevent default form submission behavior (page reload)
+    event.preventDefault();
 
-    if (!selectedFile) {
-      setMessage('Please select a file first.');
+    if (
+      !selectedFile ||
+      (selectedFile.type !== 'text/csv' && !selectedFile.name.toLowerCase().endsWith('.csv'))
+    ) {
       return;
     }
 
-    if (selectedFile.type !== 'text/csv' && !selectedFile.name.toLowerCase().endsWith('.csv')) {
-        setMessage('Please upload a CSV file.');
-        return;
-    }
-
-    setIsLoading(true); // Set loading state
-    setMessage('Uploading...');
-
-    // Create a FormData object to send the file
+    setIsLoading(true);
     const formData = new FormData();
-    formData.append('file', selectedFile); // 'file' must match the name expected by your Flask backend (request.files['file'])
+    formData.append('file', selectedFile);
 
     try {
-      // Make the POST request to your Flask backend
-      // Assuming your Flask app is running on http://localhost:5000
-      const response = await fetch('http://localhost:5001/upload', {
+      // 上傳檔案
+      const uploadResponse = await fetch('http://localhost:5001/upload', {
         method: 'POST',
-        body: formData, // FormData automatically sets the correct Content-Type header
+        body: formData,
       });
 
-      if (response.ok) { // Check if the response status is 2xx
-        const result = await response.text(); // Get the response text from Flask
-        setMessage(`Upload successful: ${result}`);
-        setSelectedFile(null); // Clear the selected file input
-      } else {
-        const errorText = await response.text(); // Get error message from Flask
-        setMessage(`Upload failed: ${errorText}`);
+      if (!uploadResponse.ok) {
+        await uploadResponse.text();
+        return;
       }
+
+      const uploaded = await uploadResponse.json();
+      setUploadedData(uploaded);
+      setSelectedFile(null);
+
+      const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
+      setFileBaseName(baseName); // ✅ NEW
+
+      // 呼叫分類預測 API
+      const predictionResponse = await fetch('http://localhost:5001/prediction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_name: baseName }),
+      });
+
+      if (!predictionResponse.ok) {
+        await predictionResponse.text();
+        return;
+      }
+
+      const predictionData = await predictionResponse.json();
+      setPredictions(predictionData.predictions);
+
+      // 呼叫回歸預測 API
+      const regressionResponse = await fetch('http://localhost:5001/regression', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_name: baseName }),
+      });
+
+      if (!regressionResponse.ok) {
+        await regressionResponse.text();
+        return;
+      }
+
+      const regressionData = await regressionResponse.json();
+      setRegressionResults(regressionData.predictions);
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setMessage(`An error occurred: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('處理過程出錯:', error);
     } finally {
-      setIsLoading(false); // Reset loading state
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>CSV File Upload for Delay Prediction</h1>
-      <p>Upload a CSV file to get predictions.</p>
+    <div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-gray-100 flex items-center justify-center p-6">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl w-full max-w-4xl p-10 text-gray-900 flex flex-col gap-10">
+          {/* 上傳區塊 */}
+          {uploadedData.length === 0 && (
+            <div className="bg-white/90 rounded-2xl shadow-md p-6 flex flex-col justify-center">
+              <FileUpload
+                isLoading={isLoading}
+                selectedFile={selectedFile}
+                handleFileChange={handleFileChange}
+                handleSubmit={handleSubmit}
+              />
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '400px', margin: '20px 0' }}>
-        <label htmlFor="csvFile" style={{ fontSize: '1.1em', fontWeight: 'bold' }}>
-          Choose CSV File:
-        </label>
-        <input
-          type="file"
-          id="csvFile"
-          name="csvFile" // This name doesn't matter for Flask, only 'file' in formData.append
-          accept=".csv" // Suggests only CSV files in the file picker
-          onChange={handleFileChange}
-          disabled={isLoading} // Disable input during upload
-          style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-        />
+          {/* 預覽與地圖區塊 */}
+          {uploadedData.length > 0 && (
+            <>
+              <div className="mt-6 max-h-[400px] overflow-y-auto border border-gray-300 rounded-lg p-4 bg-white">
+                <UploadPreview
+                  uploadedData={uploadedData}
+                  predictions={predictions}
+                  regressionResults={regressionResults}
+                />
+              </div>
 
-        <button
-          type="submit"
-          disabled={!selectedFile || isLoading} // Disable button if no file selected or uploading
-          style={{
-            padding: '10px 15px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '1em'
-          }}
-        >
-          {isLoading ? 'Uploading...' : 'Upload File'}
-        </button>
-      </form>
-
-      {message && (
-        <p style={{
-          marginTop: '20px',
-          padding: '10px',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          backgroundColor: message.includes('successful') ? '#e6ffe6' : '#ffe6e6',
-          color: message.includes('successful') ? '#338833' : '#aa3333'
-        }}>
-          {message}
-        </p>
-      )}
-
-      {selectedFile && (
-        <p style={{ marginTop: '10px', fontStyle: 'italic', color: '#555' }}>
-          Selected file: {selectedFile.name} ({selectedFile.size} bytes)
-        </p>
-      )}
+              <MapWithMarkers
+                data={uploadedData}
+                predictions={predictions}
+                regressionResults={regressionResults}
+              />
+            </>
+          )}
+          <Dashboard filename={fileBaseName} />
+        </div>
+        {/* <Heatmap filename={fileBaseName} /> */}
+      </div>
     </div>
   );
 };
