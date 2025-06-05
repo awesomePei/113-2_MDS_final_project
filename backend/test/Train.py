@@ -132,6 +132,7 @@
 
 # df = df.drop(columns = ['Customer Street', 'Order City', 'Order State'])
 # df = df.drop(columns = ['Late_delivery_risk', 'Delivery Status'])
+# # df = df.drop(columns = [ 'Delivery Status'])
 # df = df.drop(columns = ['Order Zipcode', 'Product Description'])
 
 # # prompt: load the encoder and encoder the df
@@ -194,7 +195,7 @@
 # # prompt: set up a XGboost classifier with imputer and robust scaler to preduct y_delay. Fit the training data and give me the score on testing
 # from sklearn.impute import SimpleImputer
 # from sklearn.preprocessing import RobustScaler
-# # from xgboost import XGBClassifier
+# from xgboost import XGBClassifier
 # from sklearn.pipeline import Pipeline
 # from sklearn.metrics import accuracy_score
 
