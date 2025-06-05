@@ -179,7 +179,11 @@ def regression_prediction():
 @app.route('/tabu_optimize', methods=['POST'])
 def run_tabu():
     print("📥 Received /tabu_optimize request")
-    df = pd.read_csv('backend/Regression_prediction/example_prediction.csv')
+    csv_path = os.path.join(os.path.dirname(__file__), 'Regression_prediction', 'example_prediction.csv')
+    if not os.path.exists(csv_path):
+        return jsonify({'error': f'File not found: {csv_path}'}), 404
+
+    df = pd.read_csv(csv_path)
     order_indices = list(df.index)
     best_order, best_score = tabu_search(df, order_indices)
     print("✅ Best order:", best_order)
@@ -190,7 +194,8 @@ def run_tabu():
             "best_order": best_order
         },
         "bestScore": best_score,
+        "scoreHistory": []  # 如果你有歷程資料可以填，沒有就空陣列
     })
-
+    
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001) # Listens on all public IPs at port 5000
