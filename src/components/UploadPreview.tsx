@@ -1,4 +1,3 @@
-// components/UploadPreview.tsx
 import React from 'react';
 
 interface UploadPreviewProps {
@@ -16,15 +15,13 @@ const UploadPreview: React.FC<UploadPreviewProps> = ({
     return null;
   }
 
-  // 你指定要顯示的欄位順序（key要跟資料中欄位一樣）
   const displayOrder = [
-    'order date (DateOrders)',  // 原欄位名
+    'order date (DateOrders)',
     'Customer Country',
     'Customer City',
     'Shipping Mode',
   ];
 
-  // 顯示欄位對應的名稱
   const displayNames: Record<string, string> = {
     'order date (DateOrders)': 'Order Time',
     'Customer Country': 'Country',
@@ -33,38 +30,42 @@ const UploadPreview: React.FC<UploadPreviewProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-6 max-w-full overflow-x-auto justify-center mx-auto">
+    <div className="flex flex-wrap gap-6 justify-center mx-auto p-4">
       {uploadedData.map((row, idx) => (
         <div
           key={idx}
-          className="bg-white shadow-lg rounded-xl border border-gray-300 p-5 w-full flex flex-col hover:shadow-indigo-300 transition-shadow"
+          className="bg-white shadow-xl rounded-2xl border border-gray-200 p-6 w-full max-w-md transition-all hover:shadow-indigo-400"
         >
-          {/* 顯示 Record ID */}
-          <div className="font-bold text-indigo-600 mb-3 text-lg">
+          <div className="font-bold text-indigo-700 text-xl mb-4">
             Order #{idx + 1}
           </div>
 
-          {displayOrder.map((key) => (
-            <div
-              key={key}
-              className="flex justify-between py-2 border-b last:border-b-0 border-gray-200"
-            >
-              <span className="font-semibold text-gray-700">{displayNames[key]}</span>
-              <span className="text-gray-900 text-right">{row[key]}</span>
-            </div>
-          ))}
+          <div className="space-y-2">
+            {displayOrder.map((key) => (
+              <div key={key} className="flex justify-between items-center text-gray-800">
+                <span className="font-medium text-sm text-gray-600">{displayNames[key]}</span>
+                <span className="text-sm">{row[key]}</span>
+              </div>
+            ))}
+          </div>
 
           {predictions && (
-            <div className="flex justify-between py-2 border-t border-gray-300 mt-4 text-indigo-700 font-semibold text-lg">
-              <span>Prediction</span>
-              <span>{predictions[idx] !== undefined ? predictions[idx].toFixed(3) : '-'}</span>
+            <div className="mt-5 border-t pt-3 border-gray-200 flex justify-between items-center">
+              <span className="text-indigo-600 font-semibold text-sm">Probability of Delay</span>
+              <span className="text-indigo-800 font-bold text-sm">
+                {predictions[idx] !== undefined ? `${predictions[idx].toFixed(1)}%` : '-'}
+              </span>
             </div>
           )}
 
           {regressionResults && (
-            <div className="flex justify-between py-2 border-t border-gray-300 mt-2 text-green-700 font-semibold text-lg">
-              <span>Regression</span>
-              <span>{regressionResults[idx] !== undefined ? regressionResults[idx].toFixed(3) : '-'}</span>
+            <div className="mt-2 border-t pt-3 border-gray-200 flex justify-between items-center">
+              <span className="text-green-600 font-semibold text-sm">Predicted Delay Days</span>
+              <span className="text-green-800 font-bold text-sm">
+                {regressionResults[idx] !== undefined
+                  ? `${regressionResults[idx].toFixed(3)} days`
+                  : '-'}
+              </span>
             </div>
           )}
         </div>
