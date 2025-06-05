@@ -11,8 +11,8 @@ from optimization.ga import genetic
 
 
 app = Flask(__name__)
+CORS(app)
 
-CORS(app) 
 
 # Configure the upload folder
 UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
@@ -61,11 +61,9 @@ def upload_file():
             # --- Read the saved CSV into a DataFrame ---
             # Use 'engine="python"' or 'low_memory=False' if you encounter DtypeWarning
             df = pd.read_csv(filepath)
-
             # --- Call your preprocessing function ---
             preprocessed_df = preprocess_uploaded_dataframe(df, encoder_path='./backend/model/one_hot_encoder.joblib')
             preprocessed_df.to_csv(filepath_processed, index=False)
-
             # --- Now you can work with preprocessed_df ---
             # For demonstration, let's just show its new shape and columns
             print(f"File '{filename}' uploaded and preprocessed successfully.")
